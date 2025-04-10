@@ -8,6 +8,7 @@ import { passwordSchema } from "../validators/helperValidators";
 import ForbiddenError from "../errors/ForbiddenError";
 import { Model } from "mongoose";
 import { saveChange } from "./admin";
+import { fileDelete } from "./uploadcareFiles";
 
 export const updatePassword = async( req: Request, res:Response)=>{
     const {oldPassword, newPassword} = req.body
@@ -40,8 +41,6 @@ export const updatePassword = async( req: Request, res:Response)=>{
     const role = await userType(deleteUserId)
     const adminUser = await Admin.findById({_id:req.user?.userId})
     const obj = Object.fromEntries(adminUser?.permissions ?? [])
-    console.log(adminUser?.permissions);
-    
     if(!hasPermission(role === "client" ? "clients" : 'admins', "delete",adminUser?.role! ,obj )){
       throw new ForbiddenError()
     }
@@ -53,11 +52,31 @@ export const updatePassword = async( req: Request, res:Response)=>{
       throw new BadRequest("User does not exist")
     }
     const userForDeletion : Model<any> = role === "admin" ? Admin : Client
+    const userAvatar = (await userForDeletion.findById({_id:deleteUserId})).avatar.split('/')[3]
+    await fileDelete(userAvatar)
     await userForDeletion.deleteOne({_id:deleteUserId})
     await saveChange(req.user?.userId!,role === "client" ? "clients" : 'admins', "delete" )
     res.status(StatusCodes.OK).json({msg:"User removed"})
   }
 
-export const makeNewPassword = (req:Request, res:Response)=>{
-  // create to make new pass here
+export const makeNewPassword = async (req:Request, res:Response)=>{
+  const {newPassword:newPass} = req.body
+  if(!newPass){
+    throw new BadRequest("Please provide new password")
+  }
+  const parsed = await passwordSchema.safeParseAsync(newPass)
+  if(!parsed.success){
+    throw new BadRequest("Password must be longer than 8 characters")
+  }
+  const type = await userType(req.user?.userId!)
+  let user
+  if(type === "admin"){
+    user = await Admin.findById({_id: req.user?.userId})
+  }else{
+    user = await Client.findById({_id:req.user?.userId})
+  }
+  user!.password = parsed.data
+  user!.tempPassword.needsChange = false
+  await user?.save()
+  res.status(StatusCodes.OK).json({msg:"password updated"})
 }

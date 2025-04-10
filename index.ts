@@ -14,6 +14,8 @@ import tagRouter from "./routers/tag";
 import categoryRouter from "./routers/category";
 import documentsRouter from "./routers/documents";
 import invoiceDocumentsRouter from "./routers/invoiceDocuments";
+import { emailCron } from "./controllers/cron";
+import dashboardRouter from "./routers/dashboard";
 
 require("dotenv").config();
 
@@ -21,6 +23,8 @@ const port = 5000;
 
 const app : Express = express()
 app.use(express.json())
+
+emailCron()
 
 app.use('/api/v1', authRouter)
 app.use('/api/v1', checkAuth, userRouter)
@@ -32,6 +36,7 @@ app.use('/api/v1', checkAuth, checkAdmin ,clientRouter)
 app.use('/api/v1', checkAuth, checkAdmin , categoryRouter)
 app.use('/api/v1', checkAuth, checkAdmin ,newsRouter)
 app.use('/api/v1', checkAuth, checkAdmin ,invoiceDocumentsRouter)
+app.use('/api/v1', checkAuth, checkAdmin ,dashboardRouter)
 
 
 app.use(notFound)

@@ -17,6 +17,7 @@ export interface IInvoiceDocument extends Document {
   month: number;
   createdAt: Date;
   updatedAt: Date;
+  sent: boolean;
 }
 
 const InvoiceDocumentSchema = new Schema<IInvoiceDocument>(
@@ -43,6 +44,7 @@ const InvoiceDocumentSchema = new Schema<IInvoiceDocument>(
     },
     year: { type: Number, required: true },
     month: { type: Number, required: true },
+    sent: {type: Boolean, default: false}
   },
   { timestamps: true }
 );

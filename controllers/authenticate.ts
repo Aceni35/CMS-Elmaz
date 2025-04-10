@@ -18,15 +18,14 @@ export const LogIn = async (req : Request, res: Response) => {
     const user = clientUser || adminUser
     const requestedChange = user?.tempPassword.needsChange
     const isValidTime = user?.tempPassword.validUntil! > new Date()
-    let isMatch;
+    let isTempMatch = false
     if(requestedChange && isValidTime){
-    isMatch = await user.matchTemporaryPassword(password)
-    }else{
-    isMatch = await user!.matchPassword(password);
+    isTempMatch = await user.matchTemporaryPassword(password)
     }
-    if (!isMatch) {
+    const isMatch = await user!.matchPassword(password)
+    if (!isMatch && !isTempMatch){
       throw new BadRequest("Invalid credentials");
     }
     const token = user!.createJWT();
     res.status(StatusCodes.OK).json({ msg:"Login successful", token,  firstName : user?.firstName, lastName:user?.lastName, needsPasswordChange :requestedChange});
-  };
+    }

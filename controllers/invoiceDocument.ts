@@ -7,6 +7,7 @@ import ForbiddenError from "../errors/ForbiddenError";
 import { invoiceDocumentInputSchema } from "../validators/invoiceDocumentValidator";
 import InvoiceDocument from "../models/invoiceDocument";
 import { StatusCodes } from "http-status-codes";
+import { fileDelete } from "./uploadcareFiles";
 
 export const createInvoiceDocument = async (req:Request, res:Response)=>{
     const adminUser= await Admin.findById({_id:req.user?.userId!})
@@ -34,6 +35,8 @@ export const deleteInvoiceDocument = async (req: Request, res:Response)=>{
     if(!hasPermission('documents','delete', adminUser?.role!,obj)){
       throw new ForbiddenError()
     }
+    const file = (await InvoiceDocument.findById({_id:documentId}))?.file
+    await fileDelete(file ?? "")
     await InvoiceDocument.findByIdAndDelete({_id:documentId})
     await saveChange(req.user?.userId!, "documents","delete")
     res.status(StatusCodes.OK).json({msg:"Invoice Document deleted"})

@@ -6,6 +6,7 @@ import News from "../models/news";
 import { StatusCodes } from "http-status-codes";
 import BadRequest from "../errors/BadRequestError";
 import { saveChange } from "./admin";
+import { filesDelete } from "./uploadcareFiles";
 
 export const createNews = async (req : Request,res: Response) =>{
 const adminUser=  await Admin.findById({_id:req.user?.userId})
@@ -32,6 +33,8 @@ export const deleteNews = async (req: Request, res: Response)=>{
     if(!exists){
         throw new BadRequest("News article does not exist")
     }
+    const files = (await News.findById({_id:newsId}))?.images
+    await filesDelete(files ?? [])
     await News.findOneAndDelete({_id:newsId})
     await saveChange(req.user?.userId!, "news","delete")
     res.status(StatusCodes.OK).json({msg:"news deleted"})
@@ -160,3 +163,27 @@ export const getPopularNewsThisMonth = async (req: Request, res: Response) => {
       news,
     });
   };
+
+export const saveView = async (newsId:string, userId:string)=>{
+  const news = await News.findOne({_id:newsId})
+  if(!news)return
+  news.views.push({
+    userId,
+    viewedAt: new Date(),
+  });
+  await news.save()
+}
+
+export const getSingleNews = async (req:Request, res:Response)=>{
+  const newsId = req.params.id
+  if(!newsId){
+    throw new BadRequest("Please provide news id")
+  }
+  const exists = await newsExists(newsId)
+  if(!exists){
+    throw new BadRequest("News article does not exist")
+  }
+  const news = await News.findById({_id:newsId})
+  await saveView(newsId, req.user?.userId!)
+  res.status(StatusCodes.OK).json({news})
+}

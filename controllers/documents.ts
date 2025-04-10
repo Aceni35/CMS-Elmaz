@@ -7,6 +7,7 @@ import { StatusCodes } from "http-status-codes";
 import { saveChange } from "./admin";
 import BadRequest from "../errors/BadRequestError";
 import { documentInputSchema } from "../validators/documents";
+import { fileDelete } from "./uploadcareFiles";
 
 export const createDocument = async (req:Request, res:Response)=>{
     const adminUser= await Admin.findById({_id:req.user?.userId!})
@@ -34,6 +35,8 @@ export const deleteDocument = async (req: Request, res:Response)=>{
     if(!hasPermission('documents','delete', adminUser?.role!,obj)){
       throw new ForbiddenError()
     }
+    const file = (await DocumentModel.findById({_id:documentId}))?.file
+    await fileDelete(file ?? "")
     await DocumentModel.findByIdAndDelete({_id:documentId})
     await saveChange(req.user?.userId!, "documents","delete")
     res.status(StatusCodes.OK).json({msg:"Document deleted"})

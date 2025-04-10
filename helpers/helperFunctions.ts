@@ -9,7 +9,6 @@ import Category from "../models/category";
 import DocumentModel from "../models/documents";
 import InvoiceDocument from "../models/invoiceDocument";
 
-
 type UserPermissions = {
   [key in PermissionModule]?: PermissionAction[];
 };
@@ -97,4 +96,11 @@ export const hashPassword = async (password: string)=>{
   const salt = await bcrypt.genSalt(10);
   const hashedPass = await bcrypt.hash(password, salt);
   return hashedPass
+}
+
+export const getStartOfWeek = (): Date => {
+  const now = new Date();
+  const day = now.getDay(); 
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(now.setDate(diff));
 }
